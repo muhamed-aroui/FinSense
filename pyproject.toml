@@ -16,6 +16,11 @@ dependencies = [
     "ipykernel>=6.29",
     "requests>=2.32",
     "protobuf>=7.34.1",
+    "torch>=2.2",
+    "accelerate>=0.30",
+    "trackio>=0.1",
+    "tqdm>=4.66",
+    "pyyaml>=6.0",
 ]
 
 [build-system]
@@ -24,3 +29,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/finsense"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
