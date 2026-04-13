@@ -1,0 +1,34 @@
+# Config for phase1-linear-weighted_ce
+
+phase: 1
+run_id: "phase1-linear-weighted_ce"
+model: "microsoft/deberta-v3-base"
+head: "linear"
+imbalance_strategy: "weighted_ce"
+
+dataset: "zeroshot/twitter-financial-news-sentiment"
+splits_file: "src/finsense/data/splits/phase0_v1.json"
+max_length: 64
+preprocessing:
+  strip_urls: true
+  collapse_whitespace: true
+
+seed: 42
+max_epochs: 10
+early_stopping_patience: 3
+batch_size: 64
+learning_rate: 1.0e-3
+optimizer: "adamw"
+weight_decay: 0.01
+lr_scheduler: "cosine"
+warmup_ratio: 0.1
+
+class_weights: balanced
+
+precision: "bf16"
+max_wall_clock_min: 20
+vram_budget_gb: 10
+checkpoint_every_epoch: true
+output_dir: "artifacts/phase1-linear-weighted_ce"
+deterministic: true
+cublas_workspace_config: ":4096:8"

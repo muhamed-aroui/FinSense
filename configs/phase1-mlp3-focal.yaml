@@ -1,0 +1,39 @@
+# Config for phase1-mlp3-focal
+
+phase: 1
+run_id: "phase1-mlp3-focal"
+model: "microsoft/deberta-v3-base"
+head: "mlp3"
+imbalance_strategy: "focal"
+
+dataset: "zeroshot/twitter-financial-news-sentiment"
+splits_file: "src/finsense/data/splits/phase0_v1.json"
+max_length: 64
+preprocessing:
+  strip_urls: true
+  collapse_whitespace: true
+
+seed: 42
+max_epochs: 10
+early_stopping_patience: 3
+batch_size: 64
+learning_rate: 1.0e-3
+optimizer: "adamw"
+weight_decay: 0.01
+lr_scheduler: "cosine"
+warmup_ratio: 0.1
+
+head_config:
+  hidden_dims: [512, 128]
+  dropout: 0.1
+
+class_weights: balanced
+focal_gamma: 2.0
+
+precision: "bf16"
+max_wall_clock_min: 20
+vram_budget_gb: 10
+checkpoint_every_epoch: true
+output_dir: "artifacts/phase1-mlp3-focal"
+deterministic: true
+cublas_workspace_config: ":4096:8"
