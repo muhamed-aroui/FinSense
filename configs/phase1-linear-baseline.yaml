@@ -14,8 +14,8 @@ preprocessing:
   collapse_whitespace: true
 
 seed: 42
-max_epochs: 10
-early_stopping_patience: 3
+max_epochs: 30
+early_stopping_patience: 5
 batch_size: 64
 learning_rate: 1.0e-3
 optimizer: "adamw"
@@ -24,7 +24,7 @@ lr_scheduler: "cosine"
 warmup_ratio: 0.1
 
 precision: "bf16"
-max_wall_clock_min: 20
+max_wall_clock_min: 60
 vram_budget_gb: 10
 checkpoint_every_epoch: true
 output_dir: "artifacts/phase1-linear-baseline"

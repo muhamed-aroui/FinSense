@@ -14,10 +14,10 @@ preprocessing:
   collapse_whitespace: true
 
 seed: 42
-max_epochs: 10
-early_stopping_patience: 3
+max_epochs: 30
+early_stopping_patience: 5
 batch_size: 64
-learning_rate: 1.0e-3
+learning_rate: 3.0e-4
 optimizer: "adamw"
 weight_decay: 0.01
 lr_scheduler: "cosine"
@@ -31,7 +31,7 @@ class_weights: balanced
 focal_gamma: 2.0
 
 precision: "bf16"
-max_wall_clock_min: 20
+max_wall_clock_min: 60
 vram_budget_gb: 10
 checkpoint_every_epoch: true
 output_dir: "artifacts/phase1-mlp3-focal"
