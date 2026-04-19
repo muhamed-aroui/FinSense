@@ -2,7 +2,7 @@
 
 Loads the twitter-financial-news-sentiment dataset from HF Hub,
 applies the canonical Phase 0 splits, preprocesses text, and
-tokenizes with the DeBERTa-v3-base tokenizer.
+tokenizes with the model's tokenizer (DeBERTa, FinBERT, Llama, etc.).
 """
 
 from __future__ import annotations
@@ -99,6 +99,12 @@ def load_splits(
     test_labels = [hf_val[i]["label"] for i in indices["test"]]
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    # Llama and other decoder models may lack a pad token.
+    # Set pad_token = eos_token so padding works correctly.
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.pad_token_id = tokenizer.eos_token_id
 
     return {
         "train": SentimentDataset(train_texts, train_labels, tokenizer, max_length),
