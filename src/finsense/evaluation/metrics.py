@@ -97,3 +97,48 @@ def measure_latency(
     head.train()
 
     return sum(times) / len(times) if times else 0.0
+
+
+def measure_latency_model(
+    model: nn.Module,
+    dataset: Any,
+    device: torch.device,
+    dtype: torch.dtype,
+    n_samples: int = 100,
+    warmup: int = 10,
+) -> float:
+    """Measure per-example latency for a single unified model (no separate backbone/head).
+
+    Works with AutoModelForSequenceClassification and similar models
+    that take ``input_ids`` + ``attention_mask`` and return an object
+    with a ``.logits`` attribute.
+    """
+    model.eval()
+
+    n_total = min(warmup + n_samples, len(dataset))
+    times: list[float] = []
+
+    with torch.no_grad():
+        for i in range(n_total):
+            item = dataset[i]
+            input_ids = item["input_ids"].unsqueeze(0).to(device)
+            attention_mask = item["attention_mask"].unsqueeze(0).to(device)
+
+            if device.type == "cuda":
+                torch.cuda.synchronize()
+
+            t0 = time.perf_counter()
+
+            with torch.amp.autocast("cuda", dtype=dtype, enabled=device.type == "cuda"):
+                _ = model(input_ids=input_ids, attention_mask=attention_mask)
+
+            if device.type == "cuda":
+                torch.cuda.synchronize()
+
+            t1 = time.perf_counter()
+
+            if i >= warmup:
+                times.append((t1 - t0) * 1000.0)
+
+    model.train()
+    return sum(times) / len(times) if times else 0.0
