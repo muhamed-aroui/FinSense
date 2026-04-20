@@ -1,0 +1,45 @@
+# Config for phase2-llama-qlora (4-bit base + LoRA adapters)
+
+phase: 2
+run_id: "phase2-llama-qlora"
+model: "meta-llama/Llama-3.2-1B"
+method: "qlora"
+head: "last_token_linear"
+imbalance_strategy: "sampler"
+
+dataset: "zeroshot/twitter-financial-news-sentiment"
+splits_file: "src/finsense/data/splits/phase0_v1.json"
+max_length: 64
+preprocessing:
+  strip_urls: true
+  collapse_whitespace: true
+
+seed: 42
+max_epochs: 5
+early_stopping_patience: 2
+batch_size: 16
+gradient_accumulation_steps: 2
+learning_rate: 2.0e-4
+optimizer: "adamw"
+weight_decay: 0.01
+lr_scheduler: "cosine"
+warmup_ratio: 0.1
+
+lora_config:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj"]
+
+quantization:
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_compute_dtype: "bfloat16"
+
+precision: "bf16"
+max_wall_clock_min: 45
+vram_budget_gb: 10
+checkpoint_every_epoch: true
+output_dir: "artifacts/phase2-llama-qlora"
+deterministic: true
+cublas_workspace_config: ":4096:8"
