@@ -51,6 +51,9 @@ def train_encoder_ft(config_path: str | Path) -> dict[str, Any]:
     device = _get_device(cfg)
     dtype = _get_dtype(cfg)
     use_amp = dtype in (torch.float16, torch.bfloat16) and device.type == "cuda"
+    # GradScaler is only needed for FP16. BF16 has FP32-range exponents and
+    # does not suffer from gradient underflow, so scaling is a no-op at best.
+    use_scaler = dtype == torch.float16 and device.type == "cuda"
 
     # --- Data ---
     splits = load_splits(
@@ -83,9 +86,11 @@ def train_encoder_ft(config_path: str | Path) -> dict[str, Any]:
 
     # --- Model ---
     model = AutoModelForSequenceClassification.from_pretrained(
-        cfg["model"], num_labels=3,
+        cfg["model"], num_labels=3, torch_dtype=torch.float32,   # AMP requires FP32 master weights
     ).to(device)
-
+    assert next(model.parameters()).dtype == torch.float32, (
+    f"Model params must be FP32 for AMP, got {next(model.parameters()).dtype}"
+    )
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     # --- Loss ---
@@ -121,7 +126,8 @@ def train_encoder_ft(config_path: str | Path) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Training loop ---
-    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+    #scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+    scaler = torch.amp.GradScaler("cuda", enabled=use_scaler)
     best_val_f1 = -1.0
     best_epoch = -1
     patience_counter = 0
@@ -155,8 +161,14 @@ def train_encoder_ft(config_path: str | Path) -> dict[str, Any]:
                 logits = outputs.logits
                 loss = loss_fn(logits, labels)
 
+            if not torch.isfinite(loss):
+              raise RuntimeError(f"Non-finite loss at step {global_step}: {loss.item()}. "
+                       f"Check precision (DeBERTa-v3 is unstable in bf16) and gradient clipping.")
+            
             optimizer.zero_grad()
             scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)                          # unscale before clipping
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(optimizer)
             scaler.update()
 
